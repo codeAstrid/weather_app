@@ -1,13 +1,12 @@
-import dotenv from 'dotenv';
 import { useState } from 'react';
 import axios from 'axios';
-
-dotenv.config({ path: './main.env' });
+import dotenv from 'dotenv';
 
 export default function WeatherApp() {
     const [city, setCity] = useState('');
     const [weather, setWeather] = useState(null);
     const [error, setError] = useState('');
+    const [background, setBackground] = useState('/assets/main.jpg'); // Default background
 
     const fetchWeather = async () => {
         if (!city) {
@@ -18,36 +17,69 @@ export default function WeatherApp() {
             setError('');
             const response = await axios.get(`http://localhost:3000/weather?city=${city}`);
             setWeather(response.data);
+
+            // Set background based on weather condition
+            const condition = response.data.weather[0].main.toLowerCase();
+            switch (condition) {
+                case 'clear':
+                    setBackground('/assets/sunny.jpg');
+                    break;
+                case 'clouds':
+                    setBackground('/assets/cloudy.jpg');
+                    break;
+                case 'rain':
+                    setBackground('/assets/rain.jpg');
+                    break;
+                case 'haze':
+                    setBackground('/assets/haze.jpg');
+                    break;
+                default:
+                    setBackground('/assets/main.jpg'); 
+            }
         } catch (err) {
             console.error(err);
-            const errorMessage = err.response?.data?.error || 'City not found or API error';
+            const errorMessage = err.response?.data?.message || 'City not found or API error';
             setError(errorMessage);
             setWeather(null);
         }
     };
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
-            <h1 className="text-2xl font-bold mb-4">Weather App</h1>
-            <div className="flex gap-2 mb-4">
+        <div
+            className="container"
+            style={{
+                backgroundImage: `url(${background})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                minHeight: '100vh',
+                padding: '20px',
+            }}
+        >
+            <h1 className="title">Weather App</h1>
+            <div className="input-container">
                 <input
                     type="text"
                     placeholder="Enter city name"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    className="border p-2 rounded"
+                    className="input"
                 />
-                <button onClick={fetchWeather} className="bg-blue-500 text-white px-4 py-2 rounded">
+                <button onClick={fetchWeather} className="button">
                     Get Weather
                 </button>
             </div>
-            {error && <p className="text-red-500">{error}</p>}
+            {error && <p className="error">{error}</p>}
             {weather && (
-                <div className="bg-white p-4 rounded shadow-md text-center">
-                    <h2 className="text-xl font-semibold">{weather.name}, {weather.sys.country}</h2>
-                    <p className="text-lg">{weather.main.temp}°C</p>
-                    <p>{weather.weather[0].description}</p>
-                    <img src={`http://openweathermap.org/img/wn/${weather.weather[0].icon}.png`} alt="Weather icon" />
+                <div className="weather-display">
+                    <h2 className="weather-title">
+                        {weather.name}, {weather.sys.country}
+                    </h2>
+                    <p className="temperature">{weather.main.temp}°C</p>
+                    <p className="description">{weather.weather[0].description}</p>
+                    <img
+                        src={`http://openweathermap.org/img/wn/${weather.weather[0].icon}.png`}
+                        alt="Weather icon"
+                    />
                 </div>
             )}
         </div>
